@@ -1,22 +1,31 @@
+# Given parameter A (in minutes) a countdown is started
+# When the clock reaches zero, given parameter B is displayed on the mouse
+# And the mouse will start buzzing
+
+import argparse
 import json
 import requests
 from time import sleep
 import datetime
 
-app = 'CLOCK'
-display_name = 'Clock'
-time_event = 'TIME'
-bzzz_event = 'BZZZ'
+app = 'TIMER'
+display_name = 'Timer'
+time_event = 'TIME_REMAINING'
+bzzz_event = 'BZZZ_END'
+
+parser = argparse.ArgumentParser(description='Description of your script')
+parser.add_argument('count_down', help='value (in minutes) as initial countdown')
+args = parser.parse_args()
 
 corePropsPath = '/ProgramData/SteelSeries/SteelSeries Engine 3/coreProps.json'
 gamesense_url = json.load(open(corePropsPath))['address']
 
 def register_clock():
-    clock_metadata = {
+    timer_metadata = {
         'game': app,
         'game_display_name': display_name,
     }
-    r = requests.post('http://'+gamesense_url+'/game_metadata', json=clock_metadata)
+    r = requests.post('http://'+gamesense_url+'/game_metadata', json=timer_metadata)
 
 def bind_clock_event():
     clock_handler = {
@@ -79,9 +88,23 @@ register_clock()
 bind_clock_event()
 bind_bzzz_event()
 
-while True:
-    now = datetime.datetime.now()
-    send_time(now.strftime("%X"))
-    if not now.minute and not now.second:
-        send_bzzz(now.hour)
-    sleep(0.1)
+end_time = datetime.datetime.now() + datetime.timedelta(minutes=int(args.count_down))
+while datetime.datetime.now() < end_time:
+    remaining_time = end_time - datetime.datetime.now()
+    total_seconds = int(remaining_time.total_seconds())
+
+    # Calculate hours, minutes, and seconds
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    # Format into "HH:MM:SS" string
+    time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
+
+
+    print(f"Time remaining: {remaining_time}")
+    send_time(time_str)
+    sleep(1)
+
+# we reached zero
+send_bzzz(0)
+# print("Countdown reached zero. Exiting.")
