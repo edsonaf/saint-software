@@ -2,7 +2,7 @@
 
 Library containing all relevant code made by author and/or information found across the internet.
 
-## TODO
+### TODO
 
 - [ ] create own logo
 - [ ] give credits to current angel wings logo
