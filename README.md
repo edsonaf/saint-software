@@ -19,4 +19,4 @@ todo: create own logo or figure out how to give credits to current saint logo
 > Critical content demanding immediate user attention due to potential risks.
 
 > [!CAUTION]
-> Negative potential consequences of an action.s
+> Negative potential consequences of an action.
