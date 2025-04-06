@@ -1,10 +1,16 @@
 # saint-software
 
-library containing all saint software and others found across the internet
+Library containing all relevant code made by author and/or information found across the internet.
 
-todo: create own logo or figure out how to give credits to current saint logo
+## TODO
+
+- [ ] create own logo
+- [ ] give credits to current angel wings logo
+- [ ] animate angel wings logo
 
 ## Github Markdown Feature
+
+Did you know Github has a few Markdown Features only available to them?
 
 > [!Note]  
 > Highlights information that users should take into account, even when skimming.
