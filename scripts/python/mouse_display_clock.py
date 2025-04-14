@@ -1,94 +1,65 @@
-import json
-import requests
 from time import sleep
 import datetime
+from gamesense_utils import register_game, bind_event, create_event_data, send_event
 
-app = 'CLOCK'
-display_name = 'Clock'
-time_event = 'TIME'
-bzzz_event = 'BZZZ'
+# Constants
+APP = 'CLOCK'
+DISPLAY_NAME = 'Clock'
+TIME_EVENT = 'TIME'
+BZZZ_EVENT = 'BZZZ'
 
-corePropsPath = '/ProgramData/SteelSeries/SteelSeries Engine 3/coreProps.json'
+# Register the game
+register_game(APP, DISPLAY_NAME)
 
-with open(corePropsPath, 'r') as file:
-    gamesense_url = json.load(file)['address']
-
-def register_clock():
-    clock_metadata = {
-        'game': app,
-        'game_display_name': display_name,
-    }
-    requests.post(f'http://{gamesense_url}/game_metadata', json=clock_metadata)
-
-def bind_clock_event():
-    clock_handler = {
-        'game': app,
-        'event': time_event,
-        'icon_id': 15,
-        'handlers': [
+# Bind the clock event
+bind_event(APP, TIME_EVENT, [
+    {
+        'device-type': 'screened',
+        'mode': 'screen',
+        'zone': 'one',
+        'datas': [
             {
-               'device-type': 'screened',
-               'mode': 'screen',
-               'zone': 'one',
-			   "datas": [
-                   {
-                       "icon-id": 15,
-                       'has-text': True,
-                       'length-millis': 1100
-                   }
-               ]
+                'icon-id': 15,
+                'has-text': True,
+                'length-millis': 1100
             }
         ]
     }
-    requests.post(f'http://{gamesense_url}/bind_game_event', json=clock_handler)
+])
 
-def bind_bzzz_event():
-    clock_handler = {
-        'game': app,
-        'event': bzzz_event,
-        'handlers': [
-            {
-               'device-type': 'tactile',
-			   'mode': 'vibrate',
-               'zone': 'one',
-			   'pattern': [
-                   {
-                       "type": "ti_predefined_doubleclick_100"
-                   }
-               ]
-            }
+# Bind the vibration event
+bind_event(APP, BZZZ_EVENT, [
+    {
+        'device-type': 'tactile',
+        'zone': 'one',
+        'mode': 'vibrate',
+        'pattern': [
+            {"type": "ti_predefined_strongclick_100", "delay-ms": 250},
+            {"type": "ti_predefined_doubleclick_100", "delay-ms": 350},
+            {"type": "ti_predefined_strongclick_100", "delay-ms": 600}
         ]
     }
-    requests.post(f'http://{gamesense_url}/bind_game_event', json=clock_handler)
+])
 
-def send_time(time):
-    event_data = {
-        'game': app,
-        'event': time_event,
-        'data': { 'value': time }
-    }
-    requests.post(f'http://{gamesense_url}/game_event', json=event_data)
+def send_time_event(time):
+    """Send the current time as an event."""
+    event_data = create_event_data(APP, TIME_EVENT, {'value': time})
+    send_event(event_data)
 
-def send_bzzz(id):
-    event_data = {
-        'game': app,
-        'event': bzzz_event,
-        'data': { 'value': id }
-    }
-    requests.post(f'http://{gamesense_url}/game_event', json=event_data)
-
-register_clock()
-bind_clock_event()
-bind_bzzz_event()
-
+def send_bzzz_event(id):
+    """Send a vibration event."""
+    event_data = create_event_data(APP, BZZZ_EVENT, {'value': id})
+    send_event(event_data)
 
 def show_time():
+    """Continuously display the time and trigger events."""
     while True:
         now = datetime.datetime.now()
         print(f"{now.hour}:{now.minute}:{now.second}")
-        send_time(now.strftime("%X"))
-        if not now.minute and not now.second:
-            send_bzzz(now.hour)
+        send_time_event(now.strftime("%X"))
+        if now.hour == now.minute:
+            send_bzzz_event(now.hour)  # Only triggers when now.hour == now.minute
         sleep(0.1)
 
+# Start the clock display
 show_time()
