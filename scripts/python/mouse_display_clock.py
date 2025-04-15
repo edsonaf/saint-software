@@ -1,3 +1,9 @@
+"""
+This script is designed to work on PCs with SteelSeries Engine installed.
+It uses the GameSense API to display a clock and trigger events on SteelSeries devices.
+Ensure the SteelSeries Engine is installed and running.
+"""
+
 from time import sleep
 import datetime
 from gamesense_utils import register_game, bind_event, create_event_data, send_event
@@ -57,8 +63,8 @@ def show_time():
         now = datetime.datetime.now()
         print(f"{now.hour}:{now.minute}:{now.second}")
         send_time_event(now.strftime("%X"))
-        if now.hour == now.minute:
-            send_bzzz_event(now.hour)  # Only triggers when now.hour == now.minute
+        if now.second == 0:
+            send_bzzz_event(now.minute)  # Only triggers when now.hour == now.minute
         sleep(0.1)
 
 # Start the clock display

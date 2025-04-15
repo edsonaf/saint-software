@@ -1,3 +1,10 @@
+"""
+This module provides utility functions for interacting with the SteelSeries GameSense API.
+It is designed to work on Windows PCs with SteelSeries Engine installed.
+Ensure the coreProps.json file is located at:
+C:\ProgramData\SteelSeries\SteelSeries Engine 3\coreProps.json.
+"""
+
 import json
 import requests
 
