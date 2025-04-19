@@ -62,7 +62,7 @@ def show_time():
     """Continuously display the time and trigger events."""
     while True:
         now = datetime.datetime.now()
-        print(f"{now.hour}:{now.minute}:{now.second}")
+        print(now.strftime("%X"))
         send_time_event(now.strftime("%X"))
         if now.second == 0:
             send_bzzz_event(now.minute)  # Only triggers when now.hour == now.minute
