@@ -41,8 +41,9 @@ bind_event(APP, BZZZ_EVENT, [
         'mode': 'vibrate',
         'pattern': [
             {"type": "ti_predefined_strongclick_100", "delay-ms": 250},
-            {"type": "ti_predefined_doubleclick_100", "delay-ms": 350},
-            {"type": "ti_predefined_strongclick_100", "delay-ms": 600}
+            {"type": "ti_predefined_doubleclick_100", "delay-ms": 400},
+            {"type": "ti_predefined_strongclick_100", "delay-ms": 500},
+            {"type": "ti_predefined_doubleclick_100"},
         ]
     }
 ])
@@ -65,7 +66,7 @@ def show_time():
         send_time_event(now.strftime("%X"))
         if now.second == 0:
             send_bzzz_event(now.minute)  # Only triggers when now.hour == now.minute
-        sleep(0.1)
+        sleep(0.5)
 
 # Start the clock display
 show_time()
