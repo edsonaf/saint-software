@@ -64,8 +64,8 @@ def show_time():
         now = datetime.datetime.now()
         print(now.strftime("%X"))
         send_time_event(now.strftime("%X"))
-        if now.second == 0:
-            send_bzzz_event(now.minute)  # Only triggers when now.hour == now.minute
+        if now.minute == 0 and now.second == 0:
+            send_bzzz_event(now.hour)  # Only triggers when now.hour == now.minute
         sleep(0.5)
 
 # Start the clock display
