@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SaintGameLibrary.Audio;
 using SaintGameLibrary.Input;
+using SaintGameLibrary.Scenes;
 using System;
 
 namespace SaintGameLibrary;
@@ -14,6 +15,10 @@ public class Core : Game
 
     public static Core Instance => s_instance;
 
+    private static Scene s_activeScene;
+
+    private static Scene s_nextScene; 
+    
     public static GraphicsDeviceManager Graphics { get; private set; }
 
     public static new GraphicsDevice GraphicsDevice { get; private set; }
@@ -79,6 +84,44 @@ public class Core : Game
             Exit();
         }
 
+        if (s_nextScene != null)
+        {
+            TransitionScene();
+        }
+
+        if (s_activeScene != null)
+        {
+            s_activeScene.Update(gameTime);
+        }
+
         base.Update(gameTime);
+    }
+
+    protected override void Draw(GameTime gameTime)
+    {
+        // If there is an active scene, draw it.
+        if (s_activeScene != null)
+        {
+            s_activeScene.Draw(gameTime);
+        }
+
+        base.Draw(gameTime);
+    }
+
+    public static void ChangeScene(Scene next)
+    {
+        if (s_activeScene != next)
+        {
+            s_nextScene = next;
+        }
+    }
+
+    private static void TransitionScene()
+    {
+        s_activeScene?.Dispose();
+        GC.Collect();
+        s_activeScene = s_nextScene;
+        s_nextScene = null;
+        s_activeScene?.Initialize();
     }
 }
