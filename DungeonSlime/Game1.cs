@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SaintGameLibrary;
 using SaintGameLibrary.Graphics;
-using SaintGameLibrary.Input;
 using System;
 
 namespace DungeonSlime;
@@ -17,7 +16,9 @@ public class Game1 : Core
     private AnimatedSprite _bat;
 
     private Vector2 _slimePosition;
-
+    private Vector2 _batPosition;
+    private Vector2 _batVelocity;
+    
     // Track the state of keyboard input during the previous frame.
     private KeyboardState _previousKeyboardState;
     
@@ -28,6 +29,8 @@ public class Game1 : Core
     protected override void Initialize()
     {
         base.Initialize();
+        _batPosition = new Vector2(_slime.Width + 10, 0);
+        AssignRandomBatVelocity();
     }
 
     protected override void LoadContent()
@@ -52,6 +55,108 @@ public class Game1 : Core
 
         CheckGamePadInput();
 
+        // Create a bounding rectangle for the screen.
+        var screenBounds = new Rectangle(
+            0,
+            0,
+            GraphicsDevice.PresentationParameters.BackBufferWidth,
+            GraphicsDevice.PresentationParameters.BackBufferHeight
+        );
+
+        // Creating a bounding circle for the slime
+        var slimeBounds = new Circle(
+            (int)(_slimePosition.X + (_slime.Width * 0.5f)),
+            (int)(_slimePosition.Y + (_slime.Height * 0.5f)),
+            (int)(_slime.Width * 0.5f)
+        );
+
+        // Use distance based checks to determine if the slime is within the
+        // bounds of the game screen, and if it is outside that screen edge,
+        // move it back inside.
+        if (slimeBounds.Left < screenBounds.Left)
+        {
+            _slimePosition.X = screenBounds.Left;
+        }
+        else if (slimeBounds.Right > screenBounds.Right)
+        {
+            _slimePosition.X = screenBounds.Right - _slime.Width;
+        }
+
+        if (slimeBounds.Top < screenBounds.Top)
+        {
+            _slimePosition.Y = screenBounds.Top;
+        }
+        else if (slimeBounds.Bottom > screenBounds.Bottom)
+        {
+            _slimePosition.Y = screenBounds.Bottom - _slime.Height;
+        }
+
+        // Calculate the new position of the bat based on the velocity.
+        var newBatPosition = _batPosition + _batVelocity;
+
+        // Create a bounding circle for the bat.
+        var batBounds = new Circle(
+            (int)(newBatPosition.X + (_bat.Width * 0.5f)),
+            (int)(newBatPosition.Y + (_bat.Height * 0.5f)),
+            (int)(_bat.Width * 0.5f)
+        );
+
+        var normal = Vector2.Zero;
+
+        // Use distance based checks to determine if the bat is within the
+        // bounds of the game screen, and if it is outside that screen edge,
+        // reflect it about the screen edge normal.
+        if (batBounds.Left < screenBounds.Left)
+        {
+            normal.X = Vector2.UnitX.X;
+            newBatPosition.X = screenBounds.Left;
+        }
+        else if (batBounds.Right > screenBounds.Right)
+        {
+            normal.X = -Vector2.UnitX.X;
+            newBatPosition.X = screenBounds.Right - _bat.Width;
+        }
+
+        if (batBounds.Top < screenBounds.Top)
+        {
+            normal.Y = Vector2.UnitY.Y;
+            newBatPosition.Y = screenBounds.Top;
+        }
+        else if (batBounds.Bottom > screenBounds.Bottom)
+        {
+            normal.Y = -Vector2.UnitY.Y;
+            newBatPosition.Y = screenBounds.Bottom - _bat.Height;
+        }
+
+        // If the normal is anything but Vector2.Zero, this means the bat had
+        // moved outside the screen edge so we should reflect it about the
+        // normal.
+        if (normal != Vector2.Zero)
+        {
+            _batVelocity = Vector2.Reflect(_batVelocity, normal);
+        }
+
+        _batPosition = newBatPosition;
+
+        if (slimeBounds.Intersects(batBounds))
+        {
+            // Divide the width  and height of the screen into equal columns and
+            // rows based on the width and height of the bat.
+            var totalColumns = GraphicsDevice.PresentationParameters.BackBufferWidth / (int)_bat.Width;
+            var totalRows = GraphicsDevice.PresentationParameters.BackBufferHeight / (int)_bat.Height;
+
+            // Choose a random row and column based on the total number of each
+            var column = Random.Shared.Next(0, totalColumns);
+            var row = Random.Shared.Next(0, totalRows);
+
+            // Change the bat position by setting the x and y values equal to
+            // the column and row multiplied by the width and height.
+            _batPosition = new Vector2(column * _bat.Width, row * _bat.Height);
+
+            // Assign a new random velocity to the bat
+            AssignRandomBatVelocity();
+        }
+
         base.Update(gameTime);
     }
 
@@ -61,7 +166,7 @@ public class Game1 : Core
 
         SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
         _slime.Draw(SpriteBatch, _slimePosition);
-        _bat.Draw(SpriteBatch, new Vector2(_slime.Width + 10, 0));
+        _bat.Draw(SpriteBatch, _batPosition);
         SpriteBatch.End();
 
         base.Draw(gameTime);
@@ -152,5 +257,19 @@ public class Game1 : Core
                 _slimePosition.X += speed;
             }
         }
+    }
+
+    private void AssignRandomBatVelocity()
+    {
+        // Generate a random angle.
+        var angle = (float)(Random.Shared.NextDouble() * Math.PI * 2);
+
+        // Convert angle to a direction vector.
+        var x = (float)Math.Cos(angle);
+        var y = (float)Math.Sin(angle);
+        var direction = new Vector2(x, y);
+
+        // Multiply the direction vector by the movement speed.
+        _batVelocity = direction * MOVEMENT_SPEED;
     }
 }
