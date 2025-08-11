@@ -14,6 +14,7 @@ logs/
 Thumbs.db
 
 # IDEs and editors
+.vs
 .vscode/
 .idea/
 *.suo
@@ -30,6 +31,8 @@ __pycache__/
 dist/
 build/
 out/
+bin/
+obj/
 
 # Environment variables
 .env
