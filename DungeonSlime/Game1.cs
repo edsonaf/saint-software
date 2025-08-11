@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Media;
 using SaintGameLibrary;
 using SaintGameLibrary.Graphics;
 using System;
@@ -21,6 +23,10 @@ public class Game1 : Core
 
     private Tilemap _tilemap;
     private Rectangle _roomBounds;
+
+    private SoundEffect _bounceSoundEffect;
+    private SoundEffect _collectSoundEffect;
+    private Song _themeSong;
 
     public Game1() : base(GameName, 1280, 720, false)
     {
@@ -44,6 +50,8 @@ public class Game1 : Core
         _batPosition = new Vector2(_roomBounds.Left, _roomBounds.Top);
 
         AssignRandomBatVelocity();
+
+        Audio.PlaySong(_themeSong);
     }
 
     protected override void LoadContent()
@@ -57,6 +65,10 @@ public class Game1 : Core
 
         _tilemap = Tilemap.FromFile(Content, "images/tilemap-definition.xml");
         _tilemap.Scale = new Vector2(4.0f, 4.0f);
+
+        _bounceSoundEffect = Content.Load<SoundEffect>("audio/bounce");
+        _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
+        _themeSong = Content.Load<Song>("audio/theme");
     }
 
     protected override void Update(GameTime gameTime)
@@ -70,14 +82,6 @@ public class Game1 : Core
         CheckKeyboardInput();
 
         CheckGamePadInput();
-
-        // Create a bounding rectangle for the screen.
-        //var _roomBounds = new Rectangle(
-        //    0,
-        //    0,
-        //    GraphicsDevice.PresentationParameters.BackBufferWidth,
-        //    GraphicsDevice.PresentationParameters.BackBufferHeight
-        //);
 
         // Creating a bounding circle for the slime
         var slimeBounds = new Circle(
@@ -150,6 +154,7 @@ public class Game1 : Core
         if (normal != Vector2.Zero)
         {
             _batVelocity = Vector2.Reflect(_batVelocity, normal);
+            Audio.PlaySoundEffect(_bounceSoundEffect);
         }
 
         _batPosition = newBatPosition;
@@ -163,8 +168,8 @@ public class Game1 : Core
             // Change the bat position by setting the x and y values equal to
             // the column and row multiplied by the width and height.
             _batPosition = new Vector2(column * _bat.Width, row * _bat.Height);
+            Audio.PlaySoundEffect(_collectSoundEffect);
 
-            // Assign a new random velocity to the bat
             AssignRandomBatVelocity();
         }
 
@@ -215,6 +220,26 @@ public class Game1 : Core
         if (Input.Keyboard.IsKeyDown(Keys.D) || Input.Keyboard.IsKeyDown(Keys.Right))
         {
             _slimePosition.X += speed;
+        }
+
+        // If the M key is pressed, toggle mute state for audio.
+        if (Input.Keyboard.WasKeyJustPressed(Keys.M))
+        {
+            Audio.ToggleMute();
+        }
+
+        // If the + button is pressed, increase the volume.
+        if (Input.Keyboard.WasKeyJustPressed(Keys.OemPlus))
+        {
+            Audio.SongVolume += 0.1f;
+            Audio.SoundEffectVolume += 0.1f;
+        }
+
+        // If the - button was pressed, decrease the volume.
+        if (Input.Keyboard.WasKeyJustPressed(Keys.OemMinus))
+        {
+            Audio.SongVolume -= 0.1f;
+            Audio.SoundEffectVolume -= 0.1f;
         }
     }
 

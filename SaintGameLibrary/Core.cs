@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SaintGameLibrary.Audio;
 using SaintGameLibrary.Input;
 using System;
 
@@ -21,15 +22,11 @@ public class Core : Game
 
     public static new ContentManager Content { get; private set; }
 
-    /// <summary>
-    /// Gets a reference to the input management system.
-    /// </summary>
     public static InputManager Input { get; private set; }
 
-    /// <summary>
-    /// Gets or Sets a value that indicates if the game should exit when the esc key on the keyboard is pressed.
-    /// </summary>
     public static bool ExitOnEscape { get; set; }
+
+    public static AudioController Audio { get; private set; }
 
     /// <summary>
     /// Creates a new Core instance.
@@ -64,6 +61,13 @@ public class Core : Game
         GraphicsDevice = base.GraphicsDevice;
         SpriteBatch = new SpriteBatch(GraphicsDevice);
         Input = new InputManager();
+        Audio = new AudioController();
+    }
+
+    protected override void UnloadContent()
+    {
+        Audio.Dispose();
+        base.UnloadContent();
     }
 
     protected override void Update(GameTime gameTime)
