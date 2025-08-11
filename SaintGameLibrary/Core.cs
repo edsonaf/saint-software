@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using SaintGameLibrary.Input;
 using System;
 
 namespace SaintGameLibrary;
@@ -18,6 +20,16 @@ public class Core : Game
     public static SpriteBatch SpriteBatch { get; private set; }
 
     public static new ContentManager Content { get; private set; }
+
+    /// <summary>
+    /// Gets a reference to the input management system.
+    /// </summary>
+    public static InputManager Input { get; private set; }
+
+    /// <summary>
+    /// Gets or Sets a value that indicates if the game should exit when the esc key on the keyboard is pressed.
+    /// </summary>
+    public static bool ExitOnEscape { get; set; }
 
     /// <summary>
     /// Creates a new Core instance.
@@ -43,6 +55,7 @@ public class Core : Game
         Content = base.Content;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
+        ExitOnEscape = true;
     }
 
     protected override void Initialize()
@@ -50,5 +63,18 @@ public class Core : Game
         base.Initialize();
         GraphicsDevice = base.GraphicsDevice;
         SpriteBatch = new SpriteBatch(GraphicsDevice);
+        Input = new InputManager();
+    }
+
+    protected override void Update(GameTime gameTime)
+    {
+        Input.Update(gameTime);
+
+        if (ExitOnEscape && Input.Keyboard.IsKeyDown(Keys.Escape))
+        {
+            Exit();
+        }
+
+        base.Update(gameTime);
     }
 }
