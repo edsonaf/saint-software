@@ -11,17 +11,17 @@ public class Game1 : Core
 {
     private const string GameName = "Dungeon Slime";
     private const float MOVEMENT_SPEED = 5.0f;
-    
+
     private AnimatedSprite _slime;
     private AnimatedSprite _bat;
 
     private Vector2 _slimePosition;
     private Vector2 _batPosition;
     private Vector2 _batVelocity;
-    
-    // Track the state of keyboard input during the previous frame.
-    private KeyboardState _previousKeyboardState;
-    
+
+    private Tilemap _tilemap;
+    private Rectangle _roomBounds;
+
     public Game1() : base(GameName, 1280, 720, false)
     {
     }
@@ -29,7 +29,20 @@ public class Game1 : Core
     protected override void Initialize()
     {
         base.Initialize();
-        _batPosition = new Vector2(_slime.Width + 10, 0);
+
+        var screenBounds = GraphicsDevice.PresentationParameters.Bounds;
+        _roomBounds = new Rectangle(
+            (int)_tilemap.TileWidth, (int)_tilemap.TileHeight,
+            screenBounds.Width - (int)_tilemap.TileWidth * 2,
+            screenBounds.Height - (int)_tilemap.TileHeight * 2);
+
+        var centerRow = _tilemap.Rows / 2;
+        var centerColumn = _tilemap.Columns / 2;
+
+        _slimePosition = new Vector2(centerColumn * _tilemap.TileWidth, centerRow * _tilemap.TileHeight);
+
+        _batPosition = new Vector2(_roomBounds.Left, _roomBounds.Top);
+
         AssignRandomBatVelocity();
     }
 
@@ -41,6 +54,9 @@ public class Game1 : Core
 
         _bat = atlas.CreateAnimatedSprite("bat-animation");
         _bat.Scale = new Vector2(4.0f, 4.0f);
+
+        _tilemap = Tilemap.FromFile(Content, "images/tilemap-definition.xml");
+        _tilemap.Scale = new Vector2(4.0f, 4.0f);
     }
 
     protected override void Update(GameTime gameTime)
@@ -56,12 +72,12 @@ public class Game1 : Core
         CheckGamePadInput();
 
         // Create a bounding rectangle for the screen.
-        var screenBounds = new Rectangle(
-            0,
-            0,
-            GraphicsDevice.PresentationParameters.BackBufferWidth,
-            GraphicsDevice.PresentationParameters.BackBufferHeight
-        );
+        //var _roomBounds = new Rectangle(
+        //    0,
+        //    0,
+        //    GraphicsDevice.PresentationParameters.BackBufferWidth,
+        //    GraphicsDevice.PresentationParameters.BackBufferHeight
+        //);
 
         // Creating a bounding circle for the slime
         var slimeBounds = new Circle(
@@ -73,22 +89,22 @@ public class Game1 : Core
         // Use distance based checks to determine if the slime is within the
         // bounds of the game screen, and if it is outside that screen edge,
         // move it back inside.
-        if (slimeBounds.Left < screenBounds.Left)
+        if (slimeBounds.Left < _roomBounds.Left)
         {
-            _slimePosition.X = screenBounds.Left;
+            _slimePosition.X = _roomBounds.Left;
         }
-        else if (slimeBounds.Right > screenBounds.Right)
+        else if (slimeBounds.Right > _roomBounds.Right)
         {
-            _slimePosition.X = screenBounds.Right - _slime.Width;
+            _slimePosition.X = _roomBounds.Right - _slime.Width;
         }
 
-        if (slimeBounds.Top < screenBounds.Top)
+        if (slimeBounds.Top < _roomBounds.Top)
         {
-            _slimePosition.Y = screenBounds.Top;
+            _slimePosition.Y = _roomBounds.Top;
         }
-        else if (slimeBounds.Bottom > screenBounds.Bottom)
+        else if (slimeBounds.Bottom > _roomBounds.Bottom)
         {
-            _slimePosition.Y = screenBounds.Bottom - _slime.Height;
+            _slimePosition.Y = _roomBounds.Bottom - _slime.Height;
         }
 
         // Calculate the new position of the bat based on the velocity.
@@ -106,26 +122,26 @@ public class Game1 : Core
         // Use distance based checks to determine if the bat is within the
         // bounds of the game screen, and if it is outside that screen edge,
         // reflect it about the screen edge normal.
-        if (batBounds.Left < screenBounds.Left)
+        if (batBounds.Left < _roomBounds.Left)
         {
             normal.X = Vector2.UnitX.X;
-            newBatPosition.X = screenBounds.Left;
+            newBatPosition.X = _roomBounds.Left;
         }
-        else if (batBounds.Right > screenBounds.Right)
+        else if (batBounds.Right > _roomBounds.Right)
         {
             normal.X = -Vector2.UnitX.X;
-            newBatPosition.X = screenBounds.Right - _bat.Width;
+            newBatPosition.X = _roomBounds.Right - _bat.Width;
         }
 
-        if (batBounds.Top < screenBounds.Top)
+        if (batBounds.Top < _roomBounds.Top)
         {
             normal.Y = Vector2.UnitY.Y;
-            newBatPosition.Y = screenBounds.Top;
+            newBatPosition.Y = _roomBounds.Top;
         }
-        else if (batBounds.Bottom > screenBounds.Bottom)
+        else if (batBounds.Bottom > _roomBounds.Bottom)
         {
             normal.Y = -Vector2.UnitY.Y;
-            newBatPosition.Y = screenBounds.Bottom - _bat.Height;
+            newBatPosition.Y = _roomBounds.Bottom - _bat.Height;
         }
 
         // If the normal is anything but Vector2.Zero, this means the bat had
@@ -140,14 +156,9 @@ public class Game1 : Core
 
         if (slimeBounds.Intersects(batBounds))
         {
-            // Divide the width  and height of the screen into equal columns and
-            // rows based on the width and height of the bat.
-            var totalColumns = GraphicsDevice.PresentationParameters.BackBufferWidth / (int)_bat.Width;
-            var totalRows = GraphicsDevice.PresentationParameters.BackBufferHeight / (int)_bat.Height;
-
             // Choose a random row and column based on the total number of each
-            var column = Random.Shared.Next(0, totalColumns);
-            var row = Random.Shared.Next(0, totalRows);
+            var column = Random.Shared.Next(0, _tilemap.Columns - 1);
+            var row = Random.Shared.Next(0, _tilemap.Rows - 1);
 
             // Change the bat position by setting the x and y values equal to
             // the column and row multiplied by the width and height.
@@ -165,6 +176,7 @@ public class Game1 : Core
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        _tilemap.Draw(SpriteBatch);
         _slime.Draw(SpriteBatch, _slimePosition);
         _bat.Draw(SpriteBatch, _batPosition);
         SpriteBatch.End();
