@@ -28,6 +28,11 @@ public class Game1 : Core
     private SoundEffect _collectSoundEffect;
     private Song _themeSong;
 
+    private SpriteFont _font;
+    private int _score;
+    private Vector2 _scoreTextPosition;
+    private Vector2 _scoreTextOrigin;
+
     public Game1() : base(GameName, 1280, 720, false)
     {
     }
@@ -52,6 +57,10 @@ public class Game1 : Core
         AssignRandomBatVelocity();
 
         Audio.PlaySong(_themeSong);
+
+        _scoreTextPosition = new Vector2(_roomBounds.Left, _tilemap.TileHeight * .5f);
+        var scoreTextYOrigin = _font.MeasureString("Score").Y * .5f;
+        _scoreTextOrigin = new Vector2(0, scoreTextYOrigin);
     }
 
     protected override void LoadContent()
@@ -69,6 +78,8 @@ public class Game1 : Core
         _bounceSoundEffect = Content.Load<SoundEffect>("audio/bounce");
         _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
         _themeSong = Content.Load<Song>("audio/theme");
+
+        _font = Content.Load<SpriteFont>("fonts/04B_30");
     }
 
     protected override void Update(GameTime gameTime)
@@ -171,6 +182,8 @@ public class Game1 : Core
             Audio.PlaySoundEffect(_collectSoundEffect);
 
             AssignRandomBatVelocity();
+
+            _score += 100;
         }
 
         base.Update(gameTime);
@@ -181,9 +194,23 @@ public class Game1 : Core
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
         _tilemap.Draw(SpriteBatch);
         _slime.Draw(SpriteBatch, _slimePosition);
         _bat.Draw(SpriteBatch, _batPosition);
+
+        SpriteBatch.DrawString(
+            _font,              // spriteFont
+            $"Score: {_score}", // text
+            _scoreTextPosition, // position
+            Color.White,        // color
+            0.0f,               // rotation
+            _scoreTextOrigin,   // origin
+            1.0f,               // scale
+            SpriteEffects.None, // effects
+            0.0f                // layerDepth
+        );
+
         SpriteBatch.End();
 
         base.Draw(gameTime);
