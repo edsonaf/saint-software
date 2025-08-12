@@ -1,11 +1,14 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Gum.DataTypes;
+using Gum.Forms.Controls;
+using Gum.Wireframe;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Microsoft.Xna.Framework.Media;
+using MonoGameGum;
+using MonoGameGum.GueDeriving;
 using SaintGameLibrary;
 using SaintGameLibrary.Graphics;
-using SaintGameLibrary.Input;
 using SaintGameLibrary.Scenes;
 using System;
 
@@ -33,6 +36,10 @@ public class GameScene : Scene
     private Vector2 _scoreTextPosition;
     private Vector2 _scoreTextOrigin;
 
+    private Panel _pausePanel;
+    private Button _resumeButton;
+    private SoundEffect _uiSoundEffect;
+
     public override void Initialize()
     {
         base.Initialize();
@@ -55,6 +62,7 @@ public class GameScene : Scene
         _scoreTextOrigin = new Vector2(0, scoreTextYOrigin);
 
         AssignRandomBatVelocity();
+        InitializeUI();
     }
 
     public override void LoadContent()
@@ -71,12 +79,19 @@ public class GameScene : Scene
 
         _bounceSoundEffect = Content.Load<SoundEffect>("audio/bounce");
         _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
+        _uiSoundEffect = Core.Content.Load<SoundEffect>("audio/ui");
 
         _font = Core.Content.Load<SpriteFont>("fonts/04B_30");
     }
 
     public override void Update(GameTime gameTime)
     {
+        GumService.Default.Update(gameTime);
+        if (_pausePanel.IsVisible)
+        {
+            return;
+        }
+
         _slime.Update(gameTime);
         _bat.Update(gameTime);
 
@@ -163,6 +178,34 @@ public class GameScene : Scene
             _score += 100;
         }
     }
+
+    public override void Draw(GameTime gameTime)
+    {
+        Core.GraphicsDevice.Clear(Color.CornflowerBlue);
+
+        Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+        _tilemap.Draw(Core.SpriteBatch);
+        _slime.Draw(Core.SpriteBatch, _slimePosition);
+        _bat.Draw(Core.SpriteBatch, _batPosition);
+
+        Core.SpriteBatch.DrawString(
+            _font,              // spriteFont
+            $"Score: {_score}", // text
+            _scoreTextPosition, // position
+            Color.White,        // color
+            0.0f,               // rotation
+            _scoreTextOrigin,   // origin
+            1.0f,               // scale
+            SpriteEffects.None, // effects
+            0.0f                // layerDepth
+        );
+
+        Core.SpriteBatch.End();
+
+        GumService.Default.Draw();
+    }
+
     private void AssignRandomBatVelocity()
     {
         var angle = (float)(Random.Shared.NextDouble() * Math.PI * 2);
@@ -179,7 +222,7 @@ public class GameScene : Scene
         // If the escape key is pressed, return to the title screen.
         if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Escape))
         {
-            Core.ChangeScene(new TitleScene());
+            PauseGame();
         }
 
         // If the space key is held down, the movement speed increases by 1.5
@@ -239,6 +282,11 @@ public class GameScene : Scene
         // Get the gamepad info for gamepad one.
         var gamePadOne = Core.Input.GamePads[(int)PlayerIndex.One];
 
+        if (gamePadOne.WasButtonJustPressed(Buttons.Start))
+        {
+            PauseGame();
+        }
+
         // If the A button is held down, the movement speed increases by 1.5
         // and the gamepad vibrates as feedback to the player.
         var speed = MOVEMENT_SPEED;
@@ -288,28 +336,70 @@ public class GameScene : Scene
         }
     }
 
-    public override void Draw(GameTime gameTime)
+    private void InitializeUI()
     {
-        Core.GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-
-        _tilemap.Draw(Core.SpriteBatch);
-        _slime.Draw(Core.SpriteBatch, _slimePosition);
-        _bat.Draw(Core.SpriteBatch, _batPosition);
-
-        Core.SpriteBatch.DrawString(
-            _font,              // spriteFont
-            $"Score: {_score}", // text
-            _scoreTextPosition, // position
-            Color.White,        // color
-            0.0f,               // rotation
-            _scoreTextOrigin,   // origin
-            1.0f,               // scale
-            SpriteEffects.None, // effects
-            0.0f                // layerDepth
-        );
-
-        Core.SpriteBatch.End();
+        GumService.Default.Root.Children.Clear();
+        CreatePausePanel();
     }
+
+    private void PauseGame()
+    {
+        _pausePanel.IsVisible = true;
+        _resumeButton.IsFocused = true;
+    }
+
+    private void CreatePausePanel()
+    {
+        _pausePanel = new Panel();
+        _pausePanel.Anchor(Anchor.Center);
+        _pausePanel.Visual.WidthUnits = DimensionUnitType.Absolute;
+        _pausePanel.Visual.HeightUnits = DimensionUnitType.Absolute;
+        _pausePanel.Visual.Height = 70;
+        _pausePanel.Visual.Width = 264;
+        _pausePanel.IsVisible = false;
+        _pausePanel.AddToRoot();
+
+        var background = new ColoredRectangleRuntime();
+        background.Dock(Dock.Fill);
+        background.Color = Color.DarkBlue;
+        _pausePanel.AddChild(background);
+
+        var textInstance = new TextRuntime();
+        textInstance.Text = "PAUSED";
+        textInstance.X = 10f;
+        textInstance.Y = 10f;
+        _pausePanel.AddChild(textInstance);
+
+        _resumeButton = new Button();
+        _resumeButton.Text = "RESUME";
+        _resumeButton.Anchor(Anchor.BottomLeft);
+        _resumeButton.Visual.X = 9f;
+        _resumeButton.Visual.Y = -9f;
+        _resumeButton.Visual.Width = 80;
+        _resumeButton.Click += HandleResumeButtonClicked;
+        _pausePanel.AddChild(_resumeButton);
+
+        var quitButton = new Button();
+        quitButton.Text = "QUIT";
+        quitButton.Anchor(Anchor.BottomRight);
+        quitButton.Visual.X = -9f;
+        quitButton.Visual.Y = -9f;
+        quitButton.Width = 80;
+        quitButton.Click += HandleQuitButtonClicked;
+
+        _pausePanel.AddChild(quitButton);
+    }
+
+    private void HandleResumeButtonClicked(object sender, EventArgs e)
+    {
+        Core.Audio.PlaySoundEffect(_uiSoundEffect);
+        _pausePanel.IsVisible = false;
+    }
+
+    private void HandleQuitButtonClicked(object sender, EventArgs e)
+    {
+        Core.Audio.PlaySoundEffect(_uiSoundEffect);
+        Core.ChangeScene(new TitleScene());
+    }
+
 }
