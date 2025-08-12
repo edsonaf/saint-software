@@ -21,6 +21,11 @@ public class TitleScene : Scene
     private Vector2 _pressEnterPos;
     private Vector2 _pressEnterOrigin;
 
+    private Texture2D _backgroundPattern;
+    private Rectangle _backgroundDestination;
+    private Vector2 _backgroundOffset;
+    private float _scrollSpeed = 50.0f;
+
     public override void Initialize()
     {
         base.Initialize();
@@ -41,12 +46,16 @@ public class TitleScene : Scene
         size = _font.MeasureString(PRESS_ENTER_TEXT);
         _pressEnterPos = new Vector2(640, 620);
         _pressEnterOrigin = size * 0.5f;
+
+        _backgroundOffset = Vector2.Zero;
+        _backgroundDestination = Core.GraphicsDevice.PresentationParameters.Bounds;
     }
 
     public override void LoadContent()
     {
         _font = Core.Content.Load<SpriteFont>("fonts/04B_30");
         _font5x = Content.Load<SpriteFont>("fonts/04B_30_5x");
+        _backgroundPattern = Content.Load<Texture2D>("images/background-pattern");
     }
 
     public override void Update(GameTime gameTime)
@@ -55,35 +64,37 @@ public class TitleScene : Scene
         {
             Core.ChangeScene(new GameScene());
         }
+
+        var offset = _scrollSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+        _backgroundOffset.X -= offset;
+        _backgroundOffset.Y -= offset;
+        _backgroundOffset.X %= _backgroundPattern.Width;
+        _backgroundOffset.Y %= _backgroundPattern.Height;
     }
 
     public override void Draw(GameTime gameTime)
     {
         Core.GraphicsDevice.Clear(new Color(32, 40, 78, 255));
 
+        // Draw the background pattern first using the PointWrap sampler state.
+        Core.SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
+        Core.SpriteBatch.Draw(_backgroundPattern, _backgroundDestination, new Rectangle(_backgroundOffset.ToPoint(), _backgroundDestination.Size), Color.White * 0.5f);
+        Core.SpriteBatch.End();
+
         Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-
-        // The color to use for the drop shadow text.
-        Color dropShadowColor = Color.Black * 0.5f;
-
+        var dropShadowColor = Color.Black * 0.5f;
         // Draw the Dungeon text slightly offset from it is original position and
         // with a transparent color to give it a drop shadow.
         Core.SpriteBatch.DrawString(_font5x, DUNGEON_TEXT, _dungeonTextPos + new Vector2(10, 10), dropShadowColor, 0.0f, _dungeonTextOrigin, 1.0f, SpriteEffects.None, 1.0f);
-
         // Draw the Dungeon text on top of that at its original position.
         Core.SpriteBatch.DrawString(_font5x, DUNGEON_TEXT, _dungeonTextPos, Color.White, 0.0f, _dungeonTextOrigin, 1.0f, SpriteEffects.None, 1.0f);
-
         // Draw the Slime text slightly offset from it is original position and
         // with a transparent color to give it a drop shadow.
         Core.SpriteBatch.DrawString(_font5x, SLIME_TEXT, _slimeTextPos + new Vector2(10, 10), dropShadowColor, 0.0f, _slimeTextOrigin, 1.0f, SpriteEffects.None, 1.0f);
-
         // Draw the Slime text on top of that at its original position.
         Core.SpriteBatch.DrawString(_font5x, SLIME_TEXT, _slimeTextPos, Color.White, 0.0f, _slimeTextOrigin, 1.0f, SpriteEffects.None, 1.0f);
-
         // Draw the press enter text.
         Core.SpriteBatch.DrawString(_font, PRESS_ENTER_TEXT, _pressEnterPos, Color.White, 0.0f, _pressEnterOrigin, 1.0f, SpriteEffects.None, 0.0f);
-
-        // Always end the sprite batch when finished.
         Core.SpriteBatch.End();
     }
 }
