@@ -13,13 +13,6 @@ namespace DungeonSlime.Scenes;
 
 public class GameScene : Scene
 {
-    private enum GameState
-    {
-        Playing,
-        Paused,
-        GameOver
-    }
-
     private Slime _slime;
     private Bat _bat;
     private Tilemap _tilemap;
