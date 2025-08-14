@@ -26,7 +26,6 @@ public class AudioController : IDisposable
 
     ~AudioController() => Dispose(false);
 
-
     /// <summary>
     /// Gets a value that indicates if audio is muted.
     /// </summary>

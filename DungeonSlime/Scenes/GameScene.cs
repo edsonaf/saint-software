@@ -29,6 +29,10 @@ public class GameScene : Scene
     private GameSceneUI _ui;
     private GameState _state;
 
+    private Effect _grayscaleEffect;
+    private float _saturation = 1.0f;
+    private const float FADE_SPEED = 0.02f;
+
     public override void Initialize()
     {
         base.Initialize();
@@ -54,6 +58,83 @@ public class GameScene : Scene
         // Initialize a new game to be played.
         InitializeNewGame();
     }
+
+    public override void LoadContent()
+    {
+        var atlas = TextureAtlas.FromFile(Core.Content, "images/atlas-definition.xml");
+        _tilemap = Tilemap.FromFile(Content, "images/tilemap-definition.xml");
+        _tilemap.Scale = new Vector2(4.0f, 4.0f);
+
+        var slimeAnimation = atlas.CreateAnimatedSprite("slime-animation");
+        slimeAnimation.Scale = new Vector2(4.0f, 4.0f);
+        _slime = new Slime(slimeAnimation);
+
+        var bounceSoundEffect = Content.Load<SoundEffect>("audio/bounce");
+        _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
+        
+        var batAnimation = atlas.CreateAnimatedSprite("bat-animation");
+        batAnimation.Scale = new Vector2(4.0f, 4.0f);
+        _bat = new Bat(batAnimation, bounceSoundEffect);
+
+        _grayscaleEffect = Content.Load<Effect>("effects/grayscaleEffect");
+    }
+
+    public override void Update(GameTime gameTime)
+    {
+        _ui.Update(gameTime);
+
+        if ( _state != GameState.Playing)
+        {
+            // The game is either in pause or game over state
+            // Decrease saturation to create fading grayscale effect
+            _saturation = Math.Max(0.0f, _saturation - FADE_SPEED);
+
+            if (_state == GameState.GameOver)
+            {
+                return;
+            }
+        }
+
+        if (GameController.Pause())
+        {
+            TogglePause();
+        }
+
+        if (_state == GameState.Paused)
+        {
+            return;
+        }
+
+        _slime.Update(gameTime);
+
+        _bat.Update(gameTime);
+
+        CollisionChecks();
+    }
+
+    public override void Draw(GameTime gameTime)
+    {
+        Core.GraphicsDevice.Clear(Color.AntiqueWhite);
+
+        if (_state != GameState.Playing)
+        {
+            _grayscaleEffect.Parameters["Saturation"].SetValue(_saturation);
+            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, effect: _grayscaleEffect);
+        }
+        else
+        {
+            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        }
+
+        _tilemap.Draw(Core.SpriteBatch);
+        _slime.Draw();
+        _bat.Draw();
+        Core.SpriteBatch.End();
+
+        _ui.Draw();
+    }
+
+    #region Private methods
 
     private void InitializeUI()
     {
@@ -93,49 +174,6 @@ public class GameScene : Scene
 
         _score = 0;
         _state = GameState.Playing;
-    }
-
-    public override void LoadContent()
-    {
-        var atlas = TextureAtlas.FromFile(Core.Content, "images/atlas-definition.xml");
-        _tilemap = Tilemap.FromFile(Content, "images/tilemap-definition.xml");
-        _tilemap.Scale = new Vector2(4.0f, 4.0f);
-
-        var slimeAnimation = atlas.CreateAnimatedSprite("slime-animation");
-        slimeAnimation.Scale = new Vector2(4.0f, 4.0f);
-        _slime = new Slime(slimeAnimation);
-
-        var batAnimation = atlas.CreateAnimatedSprite("bat-animation");
-        batAnimation.Scale = new Vector2(4.0f, 4.0f);
-        var bounceSoundEffect = Content.Load<SoundEffect>("audio/bounce");
-        _bat = new Bat(batAnimation, bounceSoundEffect);
-        _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
-    }
-
-    public override void Update(GameTime gameTime)
-    {
-        _ui.Update(gameTime);
-
-        if (_state == GameState.GameOver)
-        {
-            return;
-        }
-
-        if (GameController.Pause())
-        {
-            TogglePause();
-        }
-
-        if (_state == GameState.Paused)
-        {
-            return;
-        }
-
-        _slime.Update(gameTime);
-
-        _bat.Update(gameTime);
-
-        CollisionChecks();
     }
 
     private void CollisionChecks()
@@ -277,13 +315,16 @@ public class GameScene : Scene
     {
         if (_state == GameState.Paused)
         {
+            // Resume the game
             _ui.HidePausePanel();
             _state = GameState.Playing;
         }
         else
         {
+            // Pause the game
             _ui.ShowPausePanel();
             _state = GameState.Paused;
+            _saturation = 1.0f;
         }
     }
 
@@ -291,19 +332,8 @@ public class GameScene : Scene
     {
         _ui.ShowGameOverPanel();
         _state = GameState.GameOver;
+        _saturation = 1.0f;
     }
 
-    public override void Draw(GameTime gameTime)
-    {
-        Core.GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-        _tilemap.Draw(Core.SpriteBatch);
-        _slime.Draw();
-        _bat.Draw();
-        Core.SpriteBatch.End();
-
-        _ui.Draw();
-    }
-
+    #endregion Private methods
 }
