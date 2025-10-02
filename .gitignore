@@ -14,12 +14,12 @@ logs/
 Thumbs.db
 
 # IDEs and editors
+.vs
 .vscode/
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 
 # Python
 __pycache__/
@@ -30,6 +30,8 @@ __pycache__/
 dist/
 build/
 out/
+bin/
+obj/
 
 # Environment variables
 .env
